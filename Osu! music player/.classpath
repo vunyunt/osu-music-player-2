@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.fx.ide.jdt.core.JAVAFX_CONTAINER"/>
+	<classpathentry kind="lib" path="D:/dev/Libraries/gson/gson-2.8.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://www.javadoc.io/doc/com.google.code.gson/gson/2.8.1"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/CommonsIO/commons-io-2.5.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://commons.apache.org/proper/commons-io/javadocs/api-2.5/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/log4j/log4j-1.2.17.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://logging.apache.org/log4j/1.2/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/core/lucene-core-6.6.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://lucene.apache.org/core/6_6_0/core/index.html"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/analysis/common/lucene-analyzers-common-6.6.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://lucene.apache.org/core/6_6_0/analyzers-common/index.html"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/queries/lucene-queries-6.6.0.jar"/>
+	<classpathentry kind="lib" path="D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/queryparser/lucene-queryparser-6.6.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/queries/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
