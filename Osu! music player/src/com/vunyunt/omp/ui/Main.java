@@ -36,36 +36,22 @@ public class Main extends Application
 	private static final Logger LOGGER = Logger.getLogger(Application.class);
 	private PersistenceManager mPersistence = PersistenceManager.getInstance();
 
-	private AppConfig mAppConfig;
-
 	private Stage mStage;
 
 	@Override
 	public void start(Stage primaryStage)
 	{
+		this.initPersistence();
+
 		mStage = primaryStage;
 
 		LOGGER.info("Application started.");
-		LOGGER.info("Initializing persistence...");
-		try
-		{
-			mPersistence.initialize(this::chooseOsuPath);
-		}
-		catch (IllegalArgumentException | IOException e1)
-		{
-			LOGGER.debug(e1);
-			LOGGER.fatal("Unable to initialize persistence.");
-			new Alert(AlertType.ERROR, "Unable to initialize persistence.").showAndWait();
-			Platform.exit();
-		}
-
-		mAppConfig = mPersistence.getAppConfig();
 
 		try
 		{
 			AnchorPane root = FXMLLoader.load(getClass().getResource("MainWindow.fxml"));
 
-			Scene scene = new Scene(root, mAppConfig.windowWidth, mAppConfig.windowHeight);
+			Scene scene = new Scene(root, 1280, 720);
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 
@@ -78,6 +64,22 @@ public class Main extends Application
 			LOGGER.fatal("Unable to initialize javafx");
 			LOGGER.error(e.getClass().getName() + e.getMessage());
 			new Alert(AlertType.ERROR, "Unable to initialize javafx.").showAndWait();
+			Platform.exit();
+		}
+	}
+
+	private void initPersistence()
+	{
+		LOGGER.info("Initializing persistence...");
+		try
+		{
+			mPersistence.initialize(this::chooseOsuPath);
+		}
+		catch (IllegalArgumentException | IOException e1)
+		{
+			LOGGER.debug(e1);
+			LOGGER.fatal("Unable to initialize persistence.");
+			new Alert(AlertType.ERROR, "Unable to initialize persistence.").showAndWait();
 			Platform.exit();
 		}
 	}
@@ -95,9 +97,12 @@ public class Main extends Application
 
 	public void onClose(WindowEvent e)
 	{
-		mAppConfig.windowWidth = mStage.getScene().widthProperty().doubleValue();
-		mAppConfig.windowHeight = mStage.getScene().heightProperty().doubleValue();
+		AppConfig appConfig = PersistenceManager.getInstance().getAppConfig();
+
+		appConfig.windowWidth = mStage.getScene().widthProperty().doubleValue();
+		appConfig.windowHeight = mStage.getScene().heightProperty().doubleValue();
 
 		mPersistence.saveConfig();
+		System.exit(0);
 	}
 }

@@ -22,7 +22,6 @@ public class AudioPlayer
 
 	private PersistenceManager mPersistenceManager = PersistenceManager.getInstance();
 
-	private File mMusicsPath;
 	private MediaPlayer mMediaPlayer;
 	private MediaPlayer mBackPlayer;
 	private Music mCurrentlyPlaying;
@@ -42,7 +41,6 @@ public class AudioPlayer
 
 	public AudioPlayer()
 	{
-		mMusicsPath = new File(mPersistenceManager.getMusicsBasePath());
 		mPlaybackProgress = new SimpleDoubleProperty();
 		mLength = new SimpleDoubleProperty();
 
@@ -98,7 +96,7 @@ public class AudioPlayer
 
 	private MediaPlayer createPlayer(Music music)
 	{
-		File musicFile = getFile(music);
+		File musicFile = music.getAudioFile(mPersistenceManager);
 		MediaPlayer player = new MediaPlayer(new Media(musicFile.toURI().toASCIIString()));
 		mPlayerFaderTimer.put(player, new Timer());
 		return player;
@@ -120,12 +118,31 @@ public class AudioPlayer
 
 	private void fadeOutAndStop(MediaPlayer player, int timeMilli)
 	{
+		this.fadeOutAndStop(player, timeMilli, null);
+	}
+
+	private void fadeOutAndStop(MediaPlayer player, int timeMilli, Callback c)
+	{
 		fadeOut(player, timeMilli, new Callback()
 		{
 			@Override
 			public void call()
 			{
 				player.stop();
+				if(c != null) c.call();
+			}
+		});
+	}
+
+	private void fadeOutAndClear(MediaPlayer player, int timeMilli)
+	{
+		this.fadeOutAndStop(player, timeMilli, new Callback()
+		{
+			@Override
+			public void call()
+			{
+				if(mMediaPlayer == player) mMediaPlayer = null;
+				mBackPlayer = null;
 			}
 		});
 	}
@@ -243,15 +260,6 @@ public class AudioPlayer
 				}
 			});
 		}
-
-	}
-
-	/**
-	 * Gets the audio file of the given music
-	 */
-	private File getFile(Music music)
-	{
-		return new File(mMusicsPath, music.getFilePath());
 	}
 
 	/**

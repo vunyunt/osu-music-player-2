@@ -51,3 +51,5 @@ local.properties
 # Project Specific
 musicindex/
 AppConfig.json
+*.log.*
+app.log

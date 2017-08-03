@@ -28,6 +28,7 @@ public class AppConfig
 	}
 
 	public transient Charset defaultCharset = DEFAULT_CHARSET;
+	public boolean clearLucene = false;
 	public double windowWidth = 1280;
 	public double windowHeight = 720;
 	public String osuPath = "";

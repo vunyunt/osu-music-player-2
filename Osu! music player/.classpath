@@ -34,5 +34,6 @@
 			<attribute name="javadoc_location" value="file:/D:/dev/Libraries/Apache/Lucene/lucene-6.6.0/queries/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/OMP2Controls"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -1,14 +1,18 @@
 package com.vunyunt.omp.persistence.library;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.log4j.Logger;
+
+import com.vunyunt.omp.persistence.AppConfig;
+import com.vunyunt.omp.persistence.PersistenceManager;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -25,6 +29,8 @@ public class OsuMusicLibrary
 	private MusicIndex mIndex;
 
 	private ObservableList<Music> mMusics;
+
+	private AppConfig mAppConfig = PersistenceManager.getInstance().getAppConfig();
 
 	/**
 	 * Constructs a music library from the given Osu! path (Installation folder of Osu!)
@@ -75,6 +81,20 @@ public class OsuMusicLibrary
 	 */
 	private void loadMusics(MusicIndex index)
 	{
+		if(mAppConfig.clearLucene)
+		{
+			mAppConfig.clearLucene = false;
+			try
+			{
+				index.clear();
+			}
+			catch (IOException e)
+			{
+				LOGGER.error("Unable to clear index");
+				LOGGER.debug(e.getMessage());
+			}
+			PersistenceManager.getInstance().saveConfig();
+		}
 		loadIndex(index);
 		importMusics(index);
 	}
@@ -89,9 +109,10 @@ public class OsuMusicLibrary
 		{
 			LOGGER.info("Loading all musics from index...");
 			List<Music> musics = index.getAllMusics();
+			PersistenceManager pm = PersistenceManager.getInstance();
 			for (Music music : musics)
 			{
-				if(new File(new File(getSongsFolder()), music.getFilePath()).exists())
+				if(music.getAudioFile(pm).exists())
 				{
 					Platform.runLater(new Runnable()
 					{
@@ -101,7 +122,6 @@ public class OsuMusicLibrary
 							mMusics.add(music);
 						}
 					});
-
 				}
 				else
 				{
@@ -119,6 +139,8 @@ public class OsuMusicLibrary
 
 	/**
 	 * Imports all music from the given Osu! path into the index and music list
+	 *
+	 * @throws IOException
 	 */
 	private void importMusics(MusicIndex index)
 	{
@@ -132,8 +154,6 @@ public class OsuMusicLibrary
 			}
 		});
 
-		String audioPathPrefix = "audiofilename:";
-		int prefixLength = audioPathPrefix.length();
 		for (String dir : directories)
 		{
 			// List all beatmaps in a directories
@@ -153,35 +173,57 @@ public class OsuMusicLibrary
 			// Get MapSet ID and name
 			String dirnameData[] = dir.split(" ", 2);
 			String mapsetId = dirnameData[0];
-			String mapsetName = dirnameData.length == 2? dirnameData[1] : "";
+			//String mapsetName = dirnameData.length == 2? dirnameData[1] : "";
 
 			// For each beatmap, get the audio file path from the AudioFilename field
 			for (String beatmap : beatmaps)
 			{
 				File beatmapFile = new File(dirFile, beatmap);
 
-				try(BufferedReader br = new BufferedReader(new FileReader(beatmapFile)))
+				try // (BufferedReader br = new BufferedReader(new FileReader(beatmapFile)))
 				{
+					LineIterator it = FileUtils.lineIterator(beatmapFile);
 					String line;
-					while((line = br.readLine()) != null)
+
+					// Iterate over the lines to read and process necessary informations
+					// Once the amount of section is reached (i.e. all necessary informations
+					// are read), the loop is broke.
+					int sectionToProcess = 2;
+					int processedSection = 0;
+
+					Map<String, String> metadata = new HashMap<String, String>();
+
+					while(it.hasNext() && (line = it.next()) != null && processedSection < sectionToProcess)
 					{
-						line = line.trim();
-						if(line.toLowerCase().startsWith(audioPathPrefix))
+						if(line.startsWith("["))
 						{
-							line = line.substring(prefixLength);
-							line = line.trim();
-							// line is now the name of the audio file
+							++processedSection;
+							switch(line.toLowerCase())
+							{
+							case "[general]":
+							case "[metadata]":
+								metadata.putAll(readSection(it));
+								break;
+							default:
+								--processedSection;
+								break;
+							}
+						}
+					}
 
-							// Construct a unique ID using the mapset ID and the audio filename
-							String id = mapsetId + line;
-							Music m = new Music(id, mapsetName + "/" + line, dir + "/" + line);
-
-							// Adds the music into index if not already indexed
-							if(index.addNewMusic(m))
+					// Adds the music into index if not already indexed
+					Music m = new Music(mapsetId + metadata.get("AudioFilename"), dir, beatmap, metadata);
+					if(index.addNewMusic(m))
+					{
+						Platform.runLater(new Runnable()
+						{
+							@Override
+							public void run()
 							{
 								mMusics.add(m);
 							}
-						}
+						});
+
 					}
 				}
 				catch (IOException e)
@@ -204,6 +246,29 @@ public class OsuMusicLibrary
 	}
 
 	/**
+	 * Reads the section LineIterator is currently at into a key value map
+	 */
+	private Map<String, String> readSection(LineIterator it)
+	{
+		Map<String, String> kvMap = new HashMap<String, String>();
+
+		String line;
+		while(it.hasNext() && !(line = it.next().trim()).startsWith("["))
+		{
+			if(line != null && line.length() > 0)
+			{
+				String tokens[] = line.split(":");
+				if(tokens.length == 2)
+				{
+					kvMap.put(tokens[0].trim(), tokens[1].trim());
+				}
+			}
+		}
+
+		return kvMap;
+	}
+
+	/**
 	 * Gets a observable list of the musics in this library
 	 *
 	 * @return The list is updated dynamically.
@@ -218,25 +283,25 @@ public class OsuMusicLibrary
 		return mSongsFolder.getAbsolutePath();
 	}
 
-	public void search(String query)
+	public ObservableList<Music> search(String query)
 	{
-		mMusics.clear();
-
-		if(query.trim().equals(""))
-		{
-			this.loadIndex(mIndex);
-			return;
-		}
-
+		ObservableList<Music> results = FXCollections.observableArrayList();
 		try
 		{
-			List<Music> hits = mIndex.getMusic(query, 20);
-			mMusics.addAll(hits);
+			List<Music> hits = mIndex.search(query, 50);
+			results.addAll(hits);
 		}
 		catch (IOException e)
 		{
 			LOGGER.error("Unable to search index.");
 			LOGGER.debug(e.getClass().getName() + " - " + e.getMessage());
 		}
+
+		return results;
+	}
+
+	public void close()
+	{
+		mIndex.close();
 	}
 }
